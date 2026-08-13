@@ -11,6 +11,7 @@ from PySide6.QtWidgets import (
     QCheckBox,
     QHBoxLayout,
     QLabel,
+    QLayout,
     QLineEdit,
     QMainWindow,
     QPushButton,
@@ -76,6 +77,20 @@ def _frameless_flags() -> Qt.WindowType:
         | Qt.WindowType.WindowStaysOnTopHint
         | Qt.WindowType.Tool
     )
+
+
+class _ShrinkableWidget(QWidget):
+    """QWidget that never reports a size hint, so the overlay can be resized freely."""
+
+    def minimumSizeHint(self):
+        from PySide6.QtCore import QSize
+
+        return QSize(0, 0)
+
+    def sizeHint(self):
+        from PySide6.QtCore import QSize
+
+        return QSize(0, 0)
 
 
 class DragHandle(QLabel):
@@ -152,13 +167,15 @@ class ChromeWindow(QWidget):
         self._controller = controller
         self.setWindowFlags(_frameless_flags())
         self.setWindowTitle("TS4 Log Overlay Chrome")
+        self.setMinimumSize(0, 0)
 
-        root = QWidget(self)
+        root = _ShrinkableWidget(self)
         root.setObjectName("root")
         root.setStyleSheet(ROOT_STYLE)
         layout = QHBoxLayout(root)
         layout.setContentsMargins(6, 4, 6, 4)
         layout.setSpacing(6)
+        layout.setSizeConstraint(QLayout.SizeConstraint.SetNoConstraint)
 
         self._drag = DragHandle(controller.move_by, "TS4 Log Overlay  —  drag here")
         layout.addWidget(self._drag, stretch=1)
@@ -177,6 +194,8 @@ class ChromeWindow(QWidget):
         outer = QVBoxLayout(self)
         outer.setContentsMargins(0, 0, 0, 0)
         outer.addWidget(root)
+        layout.setSizeConstraint(QLayout.SizeConstraint.SetNoConstraint)
+        outer.setSizeConstraint(QLayout.SizeConstraint.SetNoConstraint)
 
     def set_click_through_checked(self, enabled: bool) -> None:
         self._btn_click.blockSignals(True)
@@ -195,6 +214,7 @@ class BodyWindow(QMainWindow):
 
         self.setWindowTitle("TS4 Log Overlay Body")
         self.setWindowFlags(_frameless_flags())
+        self.setMinimumSize(0, 0)
 
         self._filters = OverlayFilters(
             debug=bool(logging_cfg.get("debug", True)),
@@ -213,12 +233,13 @@ class BodyWindow(QMainWindow):
         self._build_ui()
 
     def _build_ui(self) -> None:
-        root = QWidget(self)
+        root = _ShrinkableWidget(self)
         root.setObjectName("root")
         root.setStyleSheet(ROOT_STYLE)
         layout = QVBoxLayout(root)
         layout.setContentsMargins(8, 8, 8, 8)
         layout.setSpacing(6)
+        layout.setSizeConstraint(QLayout.SizeConstraint.SetNoConstraint)
 
         toolbar = QHBoxLayout()
         self._chk_error = QCheckBox("ERROR")
@@ -283,6 +304,7 @@ class BodyWindow(QMainWindow):
         )
         layout.addWidget(self._grip, alignment=Qt.AlignmentFlag.AlignRight)
         self.setCentralWidget(root)
+        self.setMinimumSize(0, 0)
 
     def _on_filter_changed(self) -> None:
         self._filters.error = self._chk_error.isChecked()
@@ -442,8 +464,8 @@ class OverlayController:
         self._layout_windows()
 
     def resize_by(self, dx: int, dy: int) -> None:
-        self._width = max(200, self._width + dx)
-        self._height = max(160, self._height + dy)
+        self._width = max(120, self._width + dx)
+        self._height = max(120, self._height + dy)
         self._layout_windows()
 
     def _apply_native_styles(self) -> None:
