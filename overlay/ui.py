@@ -255,6 +255,10 @@ class BodyWindow(QMainWindow):
         self._btn_pause.setText("Resume" if self._paused else "Pause")
         self._status.setText("Paused" if self._paused else "Listening…")
 
+    @property
+    def paused(self) -> bool:
+        return self._paused
+
     def _toggle_auto_scroll(self) -> None:
         self._auto_scroll = self._btn_auto.isChecked()
         if self._auto_scroll:
