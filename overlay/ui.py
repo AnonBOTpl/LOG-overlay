@@ -6,7 +6,15 @@ from datetime import datetime
 from typing import Any
 
 from PySide6.QtCore import QPoint, Qt, QTimer
-from PySide6.QtGui import QColor, QFont, QKeySequence, QShortcut, QTextCharFormat, QTextCursor
+from PySide6.QtGui import (
+    QColor,
+    QFont,
+    QKeySequence,
+    QResizeEvent,
+    QShortcut,
+    QTextCharFormat,
+    QTextCursor,
+)
 from PySide6.QtWidgets import (
     QCheckBox,
     QHBoxLayout,
@@ -288,6 +296,22 @@ class BodyWindow(QMainWindow):
         toolbar.addWidget(self._btn_clear)
         layout.addLayout(toolbar)
 
+        # Order in which toolbar items hide when the window gets too narrow
+        # (least important first). The search box and severity checkboxes are
+        # kept visible longest.
+        self._toolbar_widgets = [
+            self._btn_clear,
+            self._btn_copy,
+            self._btn_auto,
+            self._btn_pause,
+            self._logger_search,
+            self._chk_debug,
+            self._chk_info,
+            self._chk_warn,
+            self._chk_error,
+            self._search,
+        ]
+
         self._status = QLabel("Listening…")
         layout.addWidget(self._status)
 
@@ -305,6 +329,34 @@ class BodyWindow(QMainWindow):
         layout.addWidget(self._grip, alignment=Qt.AlignmentFlag.AlignRight)
         self.setCentralWidget(root)
         self.setMinimumSize(0, 0)
+
+    def resizeEvent(self, event: QResizeEvent) -> None:  # noqa: N802
+        super().resizeEvent(event)
+        self._apply_toolbar_shrink()
+
+    def _apply_toolbar_shrink(self) -> None:
+        """Hide low-priority toolbar items when the window is too narrow,
+        instead of letting the layout squash them into each other."""
+        available = self.width() - 16  # side margins
+        # Search box stays visible last; measure toolbar with it hidden from
+        # the shrink candidates.
+        for widget in self._toolbar_widgets:
+            widget.show()
+        self.layout().activate()
+        # Measure the natural width when everything is visible.
+        total = self._toolbar_widgets[-1].sizeHint().width()  # search
+        total += 6 * (len(self._toolbar_widgets) - 1)  # spacing between items
+        for widget in self._toolbar_widgets[:-1]:
+            total += widget.sizeHint().width()
+        if total <= available:
+            return
+        # Hide from least important until it fits.
+        for widget in self._toolbar_widgets:
+            if total <= available:
+                break
+            widget.hide()
+            total -= widget.sizeHint().width() + 6
+            self.layout().activate()
 
     def _on_filter_changed(self) -> None:
         self._filters.error = self._chk_error.isChecked()

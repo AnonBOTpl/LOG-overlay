@@ -18,7 +18,7 @@ _DEFAULTS: dict[str, Any] = {
         "opacity": 0.85,
         "x": 20,
         "y": 20,
-        "width": 800,
+        "width": 1300,
         "height": 400,
         "click_through": False,
         "always_on_top": True,
