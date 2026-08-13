@@ -10,6 +10,7 @@ build/
 venv/
 .env
 
+
 # Overlay / build artifacts
 *.exe
 *.dll
@@ -18,11 +19,13 @@ venv/
 *.o
 bin/
 obj/
+dist/
 [Dd]ebug/
 [Rr]elease/
 *.user
 *.suo
 .vs/
+*.ts4script
 
 # Node / frontend tooling (if used later)
 node_modules/
@@ -30,9 +33,16 @@ node_modules/
 dist-ssr/
 
 # Project runtime
-logs/
+logs/*
+!logs/.gitkeep
 *.jsonl
 *.log
+
+# Local research extracts / build tooling
+_research/
+tools/python37/
+build/
+
 
 # OS / IDE
 .DS_Store

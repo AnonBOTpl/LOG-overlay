@@ -1,0 +1,2 @@
+# Overlay runtime (separate from The Sims 4 embedded Python 3.7)
+PySide6>=6.6

@@ -1,0 +1,36 @@
+{
+  "ipc": {
+    "host": "127.0.0.1",
+    "port": 37241,
+    "max_datagram_bytes": 8192
+  },
+  "overlay": {
+    "opacity": 0.85,
+    "x": 20,
+    "y": 20,
+    "width": 800,
+    "height": 400,
+    "click_through": false,
+    "always_on_top": true,
+    "max_displayed_events": 500,
+    "auto_scroll": true
+  },
+  "logging": {
+    "debug": true,
+    "info": true,
+    "warning": true,
+    "error": true,
+    "max_events_per_second": 5000
+  },
+  "file_logging": {
+    "enabled": true,
+    "directory": "mod_logs",
+    "max_file_size_mb": 50,
+    "flush_on_error": true
+  },
+  "mod": {
+    "session_id_prefix": "ts4",
+    "ipc_enabled": true,
+    "capture_exceptions": true
+  }
+}
