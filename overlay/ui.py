@@ -108,6 +108,40 @@ class DragHandle(QLabel):
         super().mouseReleaseEvent(event)
 
 
+class ResizeGrip(QLabel):
+    """Bottom-right drag handle to resize the overlay window."""
+
+    def __init__(self, on_resize) -> None:
+        super().__init__("⤡")
+        self._on_resize = on_resize
+        self._start: QPoint | None = None
+        self._start_size: tuple[int, int] | None = None
+        self.setCursor(Qt.CursorShape.SizeFDiagCursor)
+        self.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.setToolTip("Drag to resize")
+
+    def mousePressEvent(self, event) -> None:  # noqa: N802
+        if event.button() == Qt.MouseButton.LeftButton:
+            self._start = event.globalPosition().toPoint()
+            self._start_size = (self.width(), self.height())
+            event.accept()
+            return
+        super().mousePressEvent(event)
+
+    def mouseMoveEvent(self, event) -> None:  # noqa: N802
+        if self._start is not None and event.buttons() & Qt.MouseButton.LeftButton:
+            delta = event.globalPosition().toPoint() - self._start
+            self._on_resize(delta.x(), delta.y())
+            event.accept()
+            return
+        super().mouseMoveEvent(event)
+
+    def mouseReleaseEvent(self, event) -> None:  # noqa: N802
+        self._start = None
+        self._start_size = None
+        super().mouseReleaseEvent(event)
+
+
 class ChromeWindow(QWidget):
     """Always-interactive title strip (never click-through)."""
 
@@ -238,6 +272,14 @@ class BodyWindow(QMainWindow):
         self._view.setReadOnly(True)
         self._view.setFont(QFont("Consolas", 10))
         layout.addWidget(self._view, stretch=1)
+
+        self._grip = ResizeGrip(self._controller.resize_by)
+        self._grip.setFixedSize(18, 18)
+        self._grip.setStyleSheet(
+            "color: #E8EAED; background: rgba(255,255,255,24);"
+            "border: 1px solid rgba(255,255,255,40);"
+        )
+        layout.addWidget(self._grip, alignment=Qt.AlignmentFlag.AlignRight)
         self.setCentralWidget(root)
 
     def _on_filter_changed(self) -> None:
@@ -395,6 +437,11 @@ class OverlayController:
     def move_by(self, delta: QPoint) -> None:
         self._x += delta.x()
         self._y += delta.y()
+        self._layout_windows()
+
+    def resize_by(self, dx: int, dy: int) -> None:
+        self._width = max(200, self._width + dx)
+        self._height = max(160, self._height + dy)
         self._layout_windows()
 
     def _apply_native_styles(self) -> None:

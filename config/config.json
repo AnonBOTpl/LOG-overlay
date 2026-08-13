@@ -16,7 +16,7 @@
     "auto_scroll": true
   },
   "logging": {
-    "debug": true,
+    "debug": false,
     "info": true,
     "warning": true,
     "error": true,

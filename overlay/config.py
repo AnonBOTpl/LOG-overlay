@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import os
+import sys
 from copy import deepcopy
 from pathlib import Path
 from typing import Any
@@ -32,6 +34,40 @@ _DEFAULTS: dict[str, Any] = {
 }
 
 
+def _executable_dir() -> Path:
+    """Directory of the running overlay executable (works frozen or from source)."""
+    if getattr(sys, "frozen", False) or "__compiled__" in globals():
+        return Path(sys.executable).resolve().parent
+    return Path(sys.executable).resolve().parent
+
+
+def _discover_default_path() -> Path:
+    """Pick a config location, preferring one next to the executable."""
+    base = _executable_dir()
+    for candidate in (base / "config" / "config.json", base / "config.json"):
+        if candidate.is_file():
+            return candidate
+    if _DEFAULT_PATH.is_file():
+        return _DEFAULT_PATH
+    return base / "config" / "config.json"
+
+
+def ensure_config_file(path: str | Path | None = None) -> Path:
+    """Create a config.json from defaults if it does not exist yet."""
+    config_path = Path(path) if path else _discover_default_path()
+    if config_path.is_file():
+        return config_path
+    try:
+        config_path.parent.mkdir(parents=True, exist_ok=True)
+        config_path.write_text(
+            json.dumps(_DEFAULTS, indent=2, ensure_ascii=False) + "\n",
+            encoding="utf-8",
+        )
+    except Exception:
+        pass
+    return config_path
+
+
 def _deep_merge(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:
     result = deepcopy(base)
     for key, value in override.items():
@@ -44,13 +80,16 @@ def _deep_merge(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any
 
 def load_config(path: str | Path | None = None) -> dict[str, Any]:
     cfg = deepcopy(_DEFAULTS)
-    config_path = Path(path) if path else _DEFAULT_PATH
-    try:
-        raw = json.loads(config_path.read_text(encoding="utf-8"))
-        if isinstance(raw, dict):
-            cfg = _deep_merge(cfg, raw)
-    except Exception:
-        pass
+    config_path = Path(path) if path else _discover_default_path()
+    if config_path.is_file():
+        try:
+            raw = json.loads(config_path.read_text(encoding="utf-8"))
+            if isinstance(raw, dict):
+                cfg = _deep_merge(cfg, raw)
+        except Exception:
+            pass
+    else:
+        ensure_config_file(config_path)
 
     try:
         port = int(cfg["ipc"].get("port", 37241))

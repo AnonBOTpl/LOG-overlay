@@ -14,7 +14,7 @@ _DEFAULTS = {
         "max_datagram_bytes": 8192,
     },
     "logging": {
-        "debug": True,
+        "debug": False,
         "info": True,
         "warning": True,
         "error": True,
