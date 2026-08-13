@@ -114,31 +114,33 @@ class ResizeGrip(QLabel):
     def __init__(self, on_resize) -> None:
         super().__init__("⤡")
         self._on_resize = on_resize
-        self._start: QPoint | None = None
-        self._start_size: tuple[int, int] | None = None
+        self._last_pos: QPoint | None = None
         self.setCursor(Qt.CursorShape.SizeFDiagCursor)
         self.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.setToolTip("Drag to resize")
 
     def mousePressEvent(self, event) -> None:  # noqa: N802
         if event.button() == Qt.MouseButton.LeftButton:
-            self._start = event.globalPosition().toPoint()
-            self._start_size = (self.width(), self.height())
+            self._last_pos = event.globalPosition().toPoint()
             event.accept()
             return
         super().mousePressEvent(event)
 
     def mouseMoveEvent(self, event) -> None:  # noqa: N802
-        if self._start is not None and event.buttons() & Qt.MouseButton.LeftButton:
-            delta = event.globalPosition().toPoint() - self._start
-            self._on_resize(delta.x(), delta.y())
+        if self._last_pos is not None and event.buttons() & Qt.MouseButton.LeftButton:
+            pos = event.globalPosition().toPoint()
+            delta = pos - self._last_pos
+            self._last_pos = pos
+            # Convert device pixels to logical pixels so the window grows 1:1
+            # with the cursor even on scaled (DPI) monitors.
+            dpr = self.window().devicePixelRatioF() or 1.0
+            self._on_resize(round(delta.x() / dpr), round(delta.y() / dpr))
             event.accept()
             return
         super().mouseMoveEvent(event)
 
     def mouseReleaseEvent(self, event) -> None:  # noqa: N802
-        self._start = None
-        self._start_size = None
+        self._last_pos = None
         super().mouseReleaseEvent(event)
 
 
