@@ -1,0 +1,49 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+dist/
+build/
+.venv/
+venv/
+.env
+
+# Overlay / build artifacts
+*.exe
+*.dll
+*.pdb
+*.obj
+*.o
+bin/
+obj/
+[Dd]ebug/
+[Rr]elease/
+*.user
+*.suo
+.vs/
+
+# Node / frontend tooling (if used later)
+node_modules/
+.npm/
+dist-ssr/
+
+# Project runtime
+logs/
+*.jsonl
+*.log
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+Desktop.ini
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Local secrets / machine-specific
+*.local
+.env.*
+!.env.example
