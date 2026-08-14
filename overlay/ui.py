@@ -174,6 +174,9 @@ class ChromeWindow(QWidget):
         super().__init__()
         self._controller = controller
         self.setWindowFlags(_frameless_flags())
+        # Tool windows default to WA_QuitOnClose=False, so closing the overlay
+        # would leave the process running; restore quit-on-last-window.
+        self.setAttribute(Qt.WidgetAttribute.WA_QuitOnClose, True)
         self.setWindowTitle("TS4 Log Overlay Chrome")
         self.setMinimumSize(0, 0)
 
@@ -222,6 +225,8 @@ class BodyWindow(QMainWindow):
 
         self.setWindowTitle("TS4 Log Overlay Body")
         self.setWindowFlags(_frameless_flags())
+        # Tool windows default to WA_QuitOnClose=False; restore quit behavior.
+        self.setAttribute(Qt.WidgetAttribute.WA_QuitOnClose, True)
         self.setMinimumSize(0, 0)
 
         self._filters = OverlayFilters(
