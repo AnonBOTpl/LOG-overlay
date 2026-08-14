@@ -27,7 +27,10 @@
     "directory": "mod_logs",
     "max_file_size_mb": 50,
     "flush_on_error": true,
-    "max_log_age_days": 7
+    "max_log_age_days": 7,
+    "human_readable": true,
+    "split_by_level": true,
+    "write_json": false
   },
   "mod": {
     "session_id_prefix": "ts4",

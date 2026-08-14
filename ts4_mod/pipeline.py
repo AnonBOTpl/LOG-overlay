@@ -55,8 +55,13 @@ def start_pipeline(config_path=None):
         max_file_size_mb=cfg["file_logging"].get("max_file_size_mb", 50),
         flush_on_error=cfg["file_logging"].get("flush_on_error", True),
         enabled=cfg["file_logging"].get("enabled", True),
+        human_readable=cfg["file_logging"].get("human_readable", True),
+        split_by_level=cfg["file_logging"].get("split_by_level", True),
+        write_json=cfg["file_logging"].get("write_json", False),
     )
     file_logger.prune_old_logs(cfg["file_logging"].get("max_log_age_days", 7))
+    if cfg["file_logging"].get("write_json", False):
+        file_logger.prune_old_json()
 
     ipc = None
     if cfg.get("mod", {}).get("ipc_enabled", True):
@@ -158,6 +163,9 @@ def stop_pipeline():
     file_logger = _STATE.get("file_logger")
     if file_logger is not None:
         try:
+            cfg = _STATE.get("config") or {}
+            if cfg.get("file_logging", {}).get("write_json", False):
+                file_logger.discard_json()
             file_logger.close()
         except Exception as exc:
             self_write_exception("file_logger.close failed", exc)

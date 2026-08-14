@@ -65,10 +65,9 @@ modfile/                 # ready-to-install LogOverlay.ts4script
 ts4_mod/                 # game-side pipeline (Python 3.7)
   capture.py             #   sims4.log + excepthook capture
   normalize.py           #   raw -> normalized event
-  filter.py              #   severity + noisy-pattern filters
-  buffer.py              #   bounded, priority-aware buffer
+  filter.py              #   severity + rate limiting
   ipc.py                 #   non-blocking UDP sender (valid-JSON truncation)
-  file_logger.py         #   JSONL file logger with rotation
+  file_logger.py         #   human-readable combined + per-level logs (optional JSONL), rotation
   pipeline.py            #   wires capture -> normalize -> filter -> file + IPC
   config.py              #   load/validate config, safe defaults
 overlay/                 # desktop overlay (PySide6)
@@ -127,12 +126,40 @@ Edit `config/config.json` (or `Overlay\config\config.json` next to the exe):
     "auto_scroll": true
   },
   "logging": { "debug": false, "info": true, "warning": true, "error": true, "max_events_per_second": 5000 },
-  "file_logging": { "enabled": true, "directory": "mod_logs", "max_file_size_mb": 50, "flush_on_error": true },
+  "file_logging": { "enabled": true, "directory": "mod_logs", "max_file_size_mb": 50, "flush_on_error": true, "max_log_age_days": 7, "human_readable": true, "split_by_level": true, "write_json": false },
   "mod": { "session_id_prefix": "ts4", "ipc_enabled": true, "capture_exceptions": true }
 }
 ```
 
+`file_logging.write_json: true` writes a raw JSONL dump for diagnostics; it is
+temporary and removed when the game closes. With the default `false`, only the
+human-readable logs are written. Old log files older than `max_log_age_days`
+are removed automatically at startup.
+
 Invalid values fall back to safe defaults. Overlay-side filters never affect what the mod writes to disk.
+
+---
+
+## Logs
+
+Captured events are written to `Documents\Electronic Arts\The Sims 4\mod_logs\`
+while the game runs (even when the overlay is closed):
+
+```text
+ts4-log-20260814-121152-session.log          all events, one file
+ts4-log-20260814-121152-session.ERROR.log    errors only
+ts4-log-20260814-121152-session.WARNING.log  warnings only
+ts4-log-20260814-121152-session.INFO.log     info only
+ts4-log-20260814-121152-session.DEBUG.log    debug only
+```
+
+Lines look like `2026-08-14 12:11:52 | ERROR | logger | message`, with
+exceptions and stack traces indented below. Files older than `max_log_age_days`
+(7 by default) are cleaned automatically at startup.
+
+If `file_logging.write_json` is `true`, a raw `ts4-log-*.jsonl` dump is also
+written for debugging and removed when the game closes. The mod's own
+diagnostics are in `LogOverlay_self.log` in the same folder.
 
 ---
 

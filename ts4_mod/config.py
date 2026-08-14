@@ -26,6 +26,9 @@ _DEFAULTS = {
         "max_file_size_mb": 50,
         "flush_on_error": True,
         "max_log_age_days": 7,
+        "human_readable": True,
+        "split_by_level": True,
+        "write_json": False,
     },
     "mod": {
         "session_id_prefix": "ts4",

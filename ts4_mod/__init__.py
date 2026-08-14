@@ -56,4 +56,12 @@ def stop_pipeline():
     return _stop()
 
 
+def __on_teardown():
+    """Called by the game when the mod is unloaded (game exit / reload)."""
+    try:
+        stop_pipeline()
+    except Exception:
+        pass
+
+
 _maybe_autoload()
