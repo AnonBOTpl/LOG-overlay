@@ -26,6 +26,7 @@ dist/
 *.suo
 .vs/
 *.ts4script
+!modfile/*.ts4script
 
 # Node / frontend tooling (if used later)
 node_modules/

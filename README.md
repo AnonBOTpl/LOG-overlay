@@ -20,44 +20,48 @@ Real-time **Sims 4 log capture** (script mod) paired with a **Windows desktop ov
 
 ---
 
-## Architecture
+## Requirements
 
-```text
-                    THE SIMS 4
-                        │
-                        ▼
-                ┌───────────────┐
-                │  Log Capture  │   sims4.log hook + excepthook
-                └───────┬───────┘
-                        ▼
-                ┌───────────────┐
-                │  Normalizer   │
-                └───────┬───────┘
-                        ▼
-          ┌───────────────────────────┐
-          │ Filter / Deduplicate /    │
-          │ Rate Limit / Buffer       │
-          └─────────────┬─────────────┘
-              ┌─────────┴─────────┐
-              ▼                   ▼
-        Local Log File          UDP (127.0.0.1)
-                                  │
-                                  ▼
-                         ┌────────────────┐
-                         │    Overlay     │
-                         └────────────────┘
+- **Sims 4** with **Script Mods Allowed** enabled (tested on **1.124** / embedded **Python 3.7**).
+- **Windows** for the overlay (Win32 styles used).
+- **Windowed or borderless** game mode (see below).
+
+### Important: game display mode
+
+The overlay only appears correctly when the game runs in **windowed** or **borderless (windowed-fullscreen)** mode.
+
+Add this to `Documents\Electronic Arts\The Sims 4\Options.ini`:
+
+```ini
+fullscreen = 0
+windowedfullscreen = 1
 ```
 
-The two components are deliberately independent:
+Or simply run the game in normal windowed mode. **Exclusive fullscreen is not supported** — the overlay cannot stay on top of it.
 
-- **`ts4_mod/`** — game-side pipeline (Python 3.7, packaged as `.ts4script`).
-- **`overlay/`** — Windows desktop overlay (PySide6), runs as a separate process, optionally packaged as `Overlay.exe` (Nuitka).
+---
+
+## Quick start
+
+The packaged release (`LogOverlay.zip`) contains:
+
+```text
+Overlay/                Windows overlay (Overlay.exe + DLLs)
+LogOverlay.ts4script    the game-side script mod
+README.txt              full instructions
+```
+
+1. **Install the mod**: copy `LogOverlay.ts4script` into `Documents\Electronic Arts\The Sims 4\Mods`, then enable **Game Options → Other → Script Mods Allowed = ON** and restart the game.
+2. **Run the overlay**: run `Overlay\Overlay.exe`. On first run it auto-creates `Overlay\config\config.json` next to the exe — edit it and restart to change settings. Keep the whole `Overlay` folder together (the exe needs its DLLs).
+3. Make sure the game is **windowed / borderless** (`windowedfullscreen = 1`).
+4. Check the mod's self-diagnostics at `Documents\Electronic Arts\The Sims 4\mod_logs\LogOverlay_self.log`.
 
 ---
 
 ## Repository layout
 
 ```text
+modfile/                 # ready-to-install LogOverlay.ts4script
 ts4_mod/                 # game-side pipeline (Python 3.7)
   capture.py             #   sims4.log + excepthook capture
   normalize.py           #   raw -> normalized event
@@ -85,32 +89,15 @@ tools/
 
 ---
 
-## Requirements
-
-- **Sims 4** with **Script Mods Allowed** enabled (tested on **1.124** / embedded **Python 3.7**).
-- **Windows** for the overlay (Win32 styles used).
-- The overlay needs **Python 3.12 + PySide6** when run from source, or the bundled **Overlay.exe**.
-
----
-
-## Quick start (overlay from source)
-
-From the repo root:
-
-```text
-run_overlay.bat
-```
-
-In a second terminal (synthetic traffic, no game needed):
-
-```text
-run_demo_sender.bat
-```
-
-Or manually (no venv activation required):
+## Running the overlay from source (development)
 
 ```powershell
 .\.venv\Scripts\python.exe -m overlay.main
+```
+
+Synthetic traffic without the game:
+
+```powershell
 .\.venv\Scripts\python.exe -m tools.demo_sender
 ```
 
@@ -123,45 +110,9 @@ python -m venv .venv
 
 ---
 
-## Install the mod into Sims 4
-
-> The Sims 4 **ignores `.ts4script` archives that contain only `.py` files** — scripts must be compiled to **Python 3.7 `.pyc`** (same as Lot51 / S4CL / Better Exceptions).
-
-```text
-install_mod.bat
-```
-
-This compiles with `tools\python37`, builds `dist\LogOverlay.ts4script`, and copies it into `Mods`.
-
-Dev fallback (loads raw `.py` via the special `Scripts` folder — **do not** use together with the `.ts4script`):
-
-```text
-install_mod_dev.bat
-```
-
-Then:
-
-1. **Game Options → Other → Script Mods Allowed = ON**.
-2. Start the overlay (`run_overlay.bat` or `Overlay.exe`).
-3. Launch Sims 4 in **windowed / borderless** (the main menu is enough).
-4. Check `Documents\Electronic Arts\The Sims 4\mod_logs\LogOverlay_self.log` for the mod's own self-diagnostics.
-
----
-
-## Using the overlay exe
-
-If you downloaded the release package (`LogOverlay.zip`):
-
-1. Unzip anywhere.
-2. Run **`Overlay.exe`**.
-3. On first run it **auto-creates `config\config.json`** next to the exe — edit it and restart to change port, position, size, opacity, etc.
-4. Keep the **whole folder** together (the exe needs its DLLs).
-
----
-
 ## Config
 
-Edit `config/config.json`:
+Edit `config/config.json` (or `Overlay\config\config.json` next to the exe):
 
 ```jsonc
 {
@@ -194,9 +145,8 @@ Invalid values fall back to safe defaults. Overlay-side filters never affect wha
 
 ## Notes
 
-- Use Sims 4 in **windowed / borderless** so the overlay can appear above the game.
-- Do not run **Sims Log Enabler** at the same time until coexistence is tested — both hook `sims4.log.Logger`.
 - The overlay is designed to never block the game: UDP drops a datagram rather than stall the game thread.
+- Do not run **Sims Log Enabler** at the same time until coexistence is tested — both hook `sims4.log.Logger`.
 
 ---
 
