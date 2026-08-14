@@ -35,9 +35,7 @@ _DEFAULTS: dict[str, Any] = {
 
 
 def _executable_dir() -> Path:
-    """Directory of the running overlay executable (works frozen or from source)."""
-    if getattr(sys, "frozen", False) or "__compiled__" in globals():
-        return Path(sys.executable).resolve().parent
+    """Directory of the running executable (frozen exe or source interpreter)."""
     return Path(sys.executable).resolve().parent
 
 

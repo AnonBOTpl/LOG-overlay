@@ -2,6 +2,7 @@
 
 from __future__ import absolute_import
 
+import glob
 import json
 import os
 import time
@@ -15,6 +16,8 @@ class FileLogger(object):
         max_file_size_mb=50,
         flush_on_error=True,
         enabled=True,
+        size_check_every=128,
+        size_check_interval=5.0,
     ):
         self._enabled = bool(enabled)
         self._directory = directory
@@ -24,6 +27,11 @@ class FileLogger(object):
         self._handle = None
         self._path = None
         self._failed = False
+        self._size_check_every = max(1, int(size_check_every))
+        self._size_check_interval = max(0.5, float(size_check_interval))
+        self._write_count = 0
+        self._last_check_write = 0
+        self._last_check_time = 0.0
 
     @property
     def path(self):
@@ -45,9 +53,18 @@ class FileLogger(object):
             self._handle = None
             return False
 
+    def _should_check_size(self):
+        if self._write_count - self._last_check_write >= self._size_check_every:
+            return True
+        if time.time() - self._last_check_time >= self._size_check_interval:
+            return True
+        return False
+
     def _rotate_if_needed(self):
         if self._handle is None or self._path is None:
             return
+        self._last_check_write = self._write_count
+        self._last_check_time = time.time()
         try:
             self._handle.flush()
             if os.path.getsize(self._path) < self._max_bytes:
@@ -67,14 +84,31 @@ class FileLogger(object):
         try:
             line = json.dumps(event, ensure_ascii=False, separators=(",", ":"))
             self._handle.write(line + "\n")
+            self._write_count += 1
             if self._flush_on_error and event.get("level") == "ERROR":
                 self._handle.flush()
-            self._rotate_if_needed()
+            if self._should_check_size():
+                self._rotate_if_needed()
             return True
         except Exception:
             self._failed = True
             self.close()
             return False
+
+    def prune_old_logs(self, days=7):
+        """Delete ts4-log-*.jsonl files older than `days` days (best-effort)."""
+        if days is None or int(days) <= 0:
+            return
+        try:
+            cutoff = time.time() - int(days) * 86400
+            for path in glob.glob(os.path.join(self._directory, "ts4-log-*.jsonl")):
+                try:
+                    if os.path.getmtime(path) < cutoff:
+                        os.remove(path)
+                except Exception:
+                    continue
+        except Exception:
+            pass
 
     def close(self):
         if self._handle is not None:

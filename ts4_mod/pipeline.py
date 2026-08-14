@@ -2,7 +2,6 @@
 
 from __future__ import absolute_import
 
-from ts4_mod.buffer import EventBuffer
 from ts4_mod.capture import LogCapture
 from ts4_mod.config import load_config
 from ts4_mod.file_logger import FileLogger
@@ -21,7 +20,6 @@ _STATE = {
     "file_logger": None,
     "ipc": None,
     "filter": None,
-    "buffer": None,
     "config": None,
 }
 
@@ -47,7 +45,6 @@ def start_pipeline(config_path=None):
     self_write("session_id={0}".format(session_id), level="INFO")
 
     event_filter = EventFilter(cfg.get("logging", {}))
-    buffer = EventBuffer(maxsize=256)
 
     # Always prefer Sims 4 mod_logs for captured event files when in-game,
     # unless user set an absolute directory in config.
@@ -59,6 +56,7 @@ def start_pipeline(config_path=None):
         flush_on_error=cfg["file_logging"].get("flush_on_error", True),
         enabled=cfg["file_logging"].get("enabled", True),
     )
+    file_logger.prune_old_logs(cfg["file_logging"].get("max_log_age_days", 7))
 
     ipc = None
     if cfg.get("mod", {}).get("ipc_enabled", True):
@@ -102,7 +100,6 @@ def start_pipeline(config_path=None):
         if not event_filter.allow(event):
             return
 
-        buffer.push(event)
         if ipc is not None:
             ipc.send_event(event)
 
@@ -132,7 +129,6 @@ def start_pipeline(config_path=None):
             "file_logger": file_logger,
             "ipc": ipc,
             "filter": event_filter,
-            "buffer": buffer,
             "config": cfg,
         }
     )
@@ -165,9 +161,6 @@ def stop_pipeline():
             file_logger.close()
         except Exception as exc:
             self_write_exception("file_logger.close failed", exc)
-    buffer = _STATE.get("buffer")
-    if buffer is not None:
-        buffer.clear()
     _STATE.update(
         {
             "started": False,
@@ -176,7 +169,6 @@ def stop_pipeline():
             "file_logger": None,
             "ipc": None,
             "filter": None,
-            "buffer": None,
             "config": None,
         }
     )

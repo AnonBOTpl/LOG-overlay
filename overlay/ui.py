@@ -411,52 +411,66 @@ class BodyWindow(QMainWindow):
 
 
     def add_events(self, events: list[dict[str, Any]]) -> None:
+        if not events:
+            return
+        merged = False
         for event in events:
-            self._model.add(event)
-        self.render_all()
+            if self._model.add(event):
+                merged = True
+        if merged:
+            self.render_all()
+        else:
+            self._append_items(self._model.items[-len(events):])
         mode = "ON" if self._controller.click_through else "OFF"
         self._status.setText(
             f"Events: {len(self._model.items)}  body click-through={mode}"
         )
 
-    def render_all(self) -> None:
-        self._view.clear()
+    def _append_items(self, items) -> None:
         cursor = self._view.textCursor()
-        for item in self._model.items:
-            event = item.event
-            if not self._filters.accepts(event):
+        for item in items:
+            if not self._filters.accepts(item.event):
                 continue
-            level = event.get("level", "INFO")
-            ts = datetime.fromtimestamp(float(event.get("timestamp", 0))).strftime(
-                "%H:%M:%S"
-            )
-            logger = event.get("logger") or "-"
-            suffix = f" ×{item.count}" if item.count > 1 else ""
-            line = f"[{ts}] [{level}] [{logger}] {event.get('message', '')}{suffix}\n"
-            fmt = QTextCharFormat()
-            fmt.setForeground(LEVEL_COLORS.get(level, QColor("#E8EAED")))
-            cursor.movePosition(QTextCursor.MoveOperation.End)
-            cursor.insertText(line, fmt)
-            exc = event.get("exception")
-            if isinstance(exc, dict):
-                detail = "  exception: {0}: {1}".format(
-                    exc.get("type", "?"), exc.get("message", "")
-                )
-                detail_fmt = QTextCharFormat()
-                detail_fmt.setForeground(QColor("#F28B82"))
-                detail_fmt.setFontItalic(True)
-                cursor.movePosition(QTextCursor.MoveOperation.End)
-                cursor.insertText(detail + "\n", detail_fmt)
-            stack = event.get("stack_trace")
-            if stack:
-                stack_fmt = QTextCharFormat()
-                stack_fmt.setForeground(QColor("#C58AF9"))
-                stack_fmt.setFontItalic(True)
-                cursor.movePosition(QTextCursor.MoveOperation.End)
-                cursor.insertText(str(stack).rstrip("\n") + "\n", stack_fmt)
-            self._last_by_line[line] = item
+            self._render_item(cursor, item)
         if self._auto_scroll:
             self._view.moveCursor(QTextCursor.MoveOperation.End)
+
+    def _render_item(self, cursor, item) -> None:
+        event = item.event
+        level = event.get("level", "INFO")
+        ts = datetime.fromtimestamp(float(event.get("timestamp", 0))).strftime(
+            "%H:%M:%S"
+        )
+        logger = event.get("logger") or "-"
+        suffix = f" ×{item.count}" if item.count > 1 else ""
+        line = f"[{ts}] [{level}] [{logger}] {event.get('message', '')}{suffix}\n"
+        fmt = QTextCharFormat()
+        fmt.setForeground(LEVEL_COLORS.get(level, QColor("#E8EAED")))
+        cursor.movePosition(QTextCursor.MoveOperation.End)
+        cursor.insertText(line, fmt)
+        exc = event.get("exception")
+        if isinstance(exc, dict):
+            detail = "  exception: {0}: {1}".format(
+                exc.get("type", "?"), exc.get("message", "")
+            )
+            detail_fmt = QTextCharFormat()
+            detail_fmt.setForeground(QColor("#F28B82"))
+            detail_fmt.setFontItalic(True)
+            cursor.movePosition(QTextCursor.MoveOperation.End)
+            cursor.insertText(detail + "\n", detail_fmt)
+        stack = event.get("stack_trace")
+        if stack:
+            stack_fmt = QTextCharFormat()
+            stack_fmt.setForeground(QColor("#C58AF9"))
+            stack_fmt.setFontItalic(True)
+            cursor.movePosition(QTextCursor.MoveOperation.End)
+            cursor.insertText(str(stack).rstrip("\n") + "\n", stack_fmt)
+        self._last_by_line[line] = item
+
+    def render_all(self) -> None:
+        self._view.clear()
+        self._last_by_line.clear()
+        self._append_items(self._model.items)
 
 
 class OverlayController:

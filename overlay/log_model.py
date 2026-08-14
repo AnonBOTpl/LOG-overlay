@@ -32,15 +32,17 @@ class LogModel:
     def clear(self) -> None:
         self.items.clear()
 
-    def add(self, event: dict[str, Any]) -> None:
+    def add(self, event: dict[str, Any]) -> bool:
+        """Add an event. Returns True if it merged into the last item (repeat)."""
         fp = _fingerprint(event)
         if self.collapse_repeats and self.items:
             last = self.items[-1]
             if last.fingerprint == fp:
                 last.count += 1
                 last.event = event
-                return
+                return True
         self.items.append(DisplayEvent(event=event, count=1, fingerprint=fp))
         overflow = len(self.items) - self.max_events
         if overflow > 0:
             del self.items[0:overflow]
+        return False

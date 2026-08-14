@@ -25,6 +25,7 @@ _DEFAULTS = {
         "directory": "mod_logs",
         "max_file_size_mb": 50,
         "flush_on_error": True,
+        "max_log_age_days": 7,
     },
     "mod": {
         "session_id_prefix": "ts4",

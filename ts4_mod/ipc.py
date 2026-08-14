@@ -11,8 +11,6 @@ class UdpIpcSender(object):
         self._addr = (host, int(port))
         self._max_bytes = max(512, int(max_datagram_bytes))
         self._sock = None
-        self._disabled = False
-        self._fail_count = 0
 
     def _ensure_socket(self):
         if self._sock is not None:
@@ -85,8 +83,6 @@ class UdpIpcSender(object):
 
     def send_event(self, event):
         """Best-effort send. Never raises to callers. Never blocks."""
-        if self._disabled:
-            return False
         try:
             payload = json.dumps(event, separators=(",", ":"), ensure_ascii=False)
             data = payload.encode("utf-8")
@@ -94,14 +90,8 @@ class UdpIpcSender(object):
                 trimmed, data = self._fit_event(event, self._max_bytes)
             sock = self._ensure_socket()
             sock.sendto(data, self._addr)
-            self._fail_count = 0
             return True
         except (socket.error, OSError, ValueError, TypeError):
-            self._fail_count += 1
-            # Avoid hammering after persistent failures; keep file logging alive.
-            if self._fail_count >= 1000:
-                self._disabled = False  # keep trying, but do not escalate
-                self._fail_count = 0
             return False
 
     def close(self):
