@@ -61,3 +61,6 @@ Desktop.ini
 
 # Local tooling / agent state
 .cortexkit/
+
+# Generated publish artifacts (descriptions/checklists are tracked, zips are not)
+publish/*.zip

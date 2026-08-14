@@ -10,7 +10,7 @@ Real-time **Sims 4 log capture** (script mod) paired with a **Windows desktop ov
 
 - **Live capture** of `sims4.log` events (INFO / WARNING / ERROR / DEBUG) plus Python exceptions via `sys.excepthook`.
 - **Normalization** into a consistent structured event schema (`timestamp`, `level`, `message`, `source`, `logger`, `session_id`, `exception`, `stack_trace`, …).
-- **Independent file logging** (JSON Lines) that keeps working even when the overlay is closed.
+- **Independent file logging** that keeps working even when the overlay is closed.
 - **Non-blocking localhost UDP** transport — a missing overlay never blocks the game, and connection failures are handled gracefully.
 - **Severity filtering** on both the mod side and the overlay side.
 - **Token-bucket rate limiting** with ERROR/WARNING priority over INFO/DEBUG (spam can't starve errors).
@@ -84,6 +84,8 @@ tools/
   package_mod.py         # build .ts4script (Python 3.7 .pyc)
   build_overlay.py       # build Overlay.exe (Nuitka standalone)
   demo_sender.py         # synthetic UDP demo traffic
+publish/                 # mod-site descriptions, SignPath checklist, CurseForge zip
+.github/workflows/       # CI: builds Overlay.exe (SignPath requirement)
 ```
 
 ---
@@ -177,6 +179,23 @@ diagnostics are in `LogOverlay_self.log` in the same folder.
 
 ---
 
+## Code signing policy
+
+Windows binaries (`Overlay.exe`) published in GitHub Releases are built from this
+repository by **GitHub Actions** (`.github/workflows/build-overlay.yml`) and are
+eligible for signing under the SignPath Foundation program.
+
+- Only artifacts produced by CI (built from source in this repository) are signed.
+- Every release is reviewed and approved manually before signing.
+- No binaries are built or signed outside this repository.
+- The private key never leaves SignPath's hardware security module.
+
+Free code signing provided by [SignPath.io](https://signpath.io), certificate by
+SignPath Foundation. Build trust: verify the VirusTotal link in the release notes
+before running any binary.
+
 ## License
 
-This project is provided as-is for personal and diagnostic use. Third-party mods and their licenses are the responsibility of their respective authors.
+MIT License — see [`LICENSE`](LICENSE). Copyright (c) 2026 AnonBOTpl.
+The Sims is a trademark of Electronic Arts; this project is an unofficial,
+fan-made diagnostic tool, not affiliated with EA.
