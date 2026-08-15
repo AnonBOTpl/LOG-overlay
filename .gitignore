@@ -64,3 +64,6 @@ Desktop.ini
 
 # Generated publish artifacts (descriptions/checklists are tracked, zips are not)
 publish/*.zip
+
+# Local test launcher (not published)
+run_demo.bat
